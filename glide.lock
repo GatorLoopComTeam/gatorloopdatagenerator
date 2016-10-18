@@ -1,0 +1,8 @@
+hash: beefc0b9233c1fb9bf7dcb5c430ae1a53cde813204bd2aaf20ca0a76478cf435
+updated: 2016-10-18T19:07:20.750590136-04:00
+imports:
+- name: github.com/go-sql-driver/mysql
+  version: a732e14c62dde3285440047bba97581bc472ae18
+- name: github.com/Sirupsen/logrus
+  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+testImports: []

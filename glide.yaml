@@ -2,8 +2,5 @@ package: github.com/gatorloopdatagenerator
 import:
 - package: github.com/Sirupsen/logrus
   version: ~0.10.0
-- package: github.com/gatorloopwebapp/server
-  subpackages:
-  - constants
 - package: github.com/go-sql-driver/mysql
   version: ~1.2.0
