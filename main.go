@@ -15,6 +15,28 @@ func random(min, max float64) float64 {
 	return rand.Float64()*(max-min) + min
 }
 
+func getVelAccandPos(currentVel, currentAcc, currentPos float64) (float64, float64, float64) {
+	if currentPos > 1609 {
+		currentAcc -= 0.5
+		if currentVel <= 0 {
+			return 0, 0, currentPos
+		}
+	} else if currentAcc < 20 {
+		currentAcc += 0.1
+	} else if currentAcc > 20 && currentAcc < 30 {
+		currentAcc += 0.1
+	}
+
+	currentVel = currentVel + currentAcc/20
+	if currentVel > 250 {
+		currentVel = 250
+		currentAcc = 0
+	}
+	currentPos = currentPos + currentVel/20
+
+	return currentVel, currentAcc, currentPos
+}
+
 var acceleration, velocity, position, pressure, roll, pitch, yaw, temperature float64
 var pVoltage, pSOC, pTemp, pAmpHour float64
 var aVoltage, aSOC, aTemp, aAmpHour float64
@@ -38,6 +60,7 @@ func main() {
 	aSOC = 1.0
 	rand.Seed(time.Now().Unix())
 	startTime = time.Now()
+	resetAcceleration := false
 	for {
 		database.DB.Exec("INSERT INTO gatorloop.Acceleration VALUES(NULL, " + fmt.Sprintf("%f", acceleration) + ")")
 		database.DB.Exec("INSERT INTO gatorloop.Position VALUES(NULL, " + fmt.Sprintf("%f", position) + ")")
@@ -48,22 +71,26 @@ func main() {
 		database.DB.Exec("INSERT INTO gatorloop.PrimaryBattery VALUES(NULL," + fmt.Sprintf("%f,%f,%f,%f", pVoltage, pSOC, pTemp, pAmpHour) + ")")
 		database.DB.Exec("INSERT INTO gatorloop.AuxiliaryBattery VALUES(NULL," + fmt.Sprintf("%f,%f,%f,%f", aVoltage, aSOC, aTemp, aAmpHour) + ")")
 
-		acceleration += 0.1
-		velocity += 0.1
-		position++
+		velocity, acceleration, position = getVelAccandPos(velocity, acceleration, position)
+		if position > 1609 && !resetAcceleration {
+			acceleration = 0
+			resetAcceleration = true
+		}
 		pressure = random(40, 60)
 		roll = random(0, 1)
 		pitch = random(0, 1)
 		yaw = random(0, 1)
 		temperature = random(75, 80)
 		pVoltage = random(4.8, 5)
-		pSOC -= .0001
+		pSOC -= random(.0001, .001)
 		pTemp = random(75, 80)
 		pAmpHour = random(180, 200)
 		aVoltage = random(4.8, 5)
-		aSOC -= .0001
+		if pSOC <= 0 {
+			aSOC -= random(.0001, .001)
+		}
 		aTemp = random(75, 80)
 		aAmpHour = random(180, 200)
-		time.Sleep(time.Millisecond * 10)
+		time.Sleep(time.Millisecond * 50)
 	}
 }
