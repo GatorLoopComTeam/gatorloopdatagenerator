@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -15,16 +16,14 @@ func random(min, max float64) float64 {
 	return rand.Float64()*(max-min) + min
 }
 
-func getVelAccandPos(currentVel, currentAcc, currentPos float64) (float64, float64, float64) {
+func getVelAccandPos(currentVel, currentAcc, currentPos float64, accelerationInterval float64) (float64, float64, float64) {
 	if currentPos > 1609 {
-		currentAcc -= 0.5
+		currentAcc -= accelerationInterval
 		if currentVel <= 0 {
 			return 0, 0, currentPos
 		}
-	} else if currentAcc < 20 {
-		currentAcc += 0.1
-	} else if currentAcc > 20 && currentAcc < 30 {
-		currentAcc += 0.1
+	} else {
+		currentAcc += accelerationInterval
 	}
 
 	currentVel = currentVel + currentAcc/20
@@ -41,6 +40,7 @@ var acceleration, velocity, position, pressure, roll, pitch, yaw, temperature fl
 var pVoltage, pSOC, pTemp, pAmpHour float64
 var aVoltage, aSOC, aTemp, aAmpHour float64
 var startTime time.Time
+var accelerationInterval float64
 
 func main() {
 	database.InitDB()
@@ -54,6 +54,13 @@ func main() {
 		database.DB.Exec("DELETE FROM gatorloop.AuxiliaryBattery")
 		log.Info("Deleted all entries in database")
 		return
+	} else if len(os.Args) == 2 {
+		interval, err := strconv.Atoi(os.Args[1])
+		accelerationInterval = float64(interval)
+		if err != nil {
+			fmt.Println("This program only accepts cleanup or an integer to specify acceleration interval")
+			os.Exit(1)
+		}
 	}
 
 	pSOC = 1.0
@@ -71,7 +78,7 @@ func main() {
 		database.DB.Exec("INSERT INTO gatorloop.PrimaryBattery VALUES(NULL," + fmt.Sprintf("%f,%f,%f,%f", pVoltage, pSOC, pTemp, pAmpHour) + ")")
 		database.DB.Exec("INSERT INTO gatorloop.AuxiliaryBattery VALUES(NULL," + fmt.Sprintf("%f,%f,%f,%f", aVoltage, aSOC, aTemp, aAmpHour) + ")")
 
-		velocity, acceleration, position = getVelAccandPos(velocity, acceleration, position)
+		velocity, acceleration, position = getVelAccandPos(velocity, acceleration, position, accelerationInterval)
 		if position > 1609 && !resetAcceleration {
 			acceleration = 0
 			resetAcceleration = true
